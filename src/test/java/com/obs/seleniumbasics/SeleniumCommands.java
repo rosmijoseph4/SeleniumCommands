@@ -89,6 +89,10 @@ public class SeleniumCommands {
         driver.findElement(By.id("submitbutton")).click();
 
     }
+    @Test
+    public void VerifyUrl(){
+        System.out.println("rosmi");
+    }
 }
 
 
