@@ -1,111 +1,126 @@
 package com.obs.seleniumbasics;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.testng.Assert;
+import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Set;
 
 public class SeleniumCommands {
     public WebDriver driver;
-    public void testInitialize(String browser,String url) {
-        if(browser.equalsIgnoreCase("chrome")) {
+
+    public void testInitialize(String browser, String url) {
+        if (browser.equalsIgnoreCase("chrome")) {
             WebDriverManager.chromedriver().setup();
-            driver=new ChromeDriver();
-        } else if(browser.equalsIgnoreCase("edge")) {
+            driver = new ChromeDriver();
+        } else if (browser.equalsIgnoreCase("edge")) {
             WebDriverManager.edgedriver().setup();
-            driver=new EdgeDriver();
-        }else if(browser.equalsIgnoreCase("firefox")) {
+            driver = new EdgeDriver();
+        } else if (browser.equalsIgnoreCase("firefox")) {
             //System.setProperty("webdriver.gecko.driver","C:\\Users\\Rosmi Joseph\\Documents\\Selenium\\Firefoxpath\\geckodriver.exe");
-           WebDriverManager.firefoxdriver().setup();
-            driver=new FirefoxDriver();
-        }else {
+            WebDriverManager.firefoxdriver().setup();
+            driver = new FirefoxDriver();
+        } else {
             try {
                 throw new Exception("Browser value not defined");
-            } catch(Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         driver.manage().window().maximize();
         driver.manage().deleteAllCookies();
         //driver.get(url);
-       // driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
+        // driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
     }
 
     @BeforeTest
     public void setUp() {
-        testInitialize("chrome","http://demowebshop.tricentis.com/");
+        testInitialize("chrome", "http://demowebshop.tricentis.com/");
     }
+
     @AfterMethod
-    public void tearDown() {
+    public void tearDown(ITestResult result) throws IOException {
+        if (result.getStatus() == ITestResult.FAILURE) {
+            TakesScreenshot screenshot = (TakesScreenshot) driver;
+            File source = screenshot.getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(source, new File("./Screenshots/" + result.getName() + ".png"));
+        }
+       driver.quit();
         //driver.close();
-        //driver.quit();
     }
+
 
     @Test
     public void verifyHomePageTitle() {
         driver.get("http://demowebshop.tricentis.com/");
-        String expTitle ="Demo Web Shop";
-        String actualTitle=driver.getTitle();
-        Assert.assertEquals(actualTitle, expTitle,"ERROR :Invalid Homepage Title Found");
+        String expTitle = "Demo1 Web Shop";
+        String actualTitle = driver.getTitle();
+        Assert.assertEquals(actualTitle, expTitle, "ERROR :Invalid Homepage Title Found");
     }
+
     @Test
-    public void VerifyWindowHandle(){
+    public void VerifyWindowHandle() {
         driver.get("https://demo.guru99.com/popup.php");
-        String parentwindow=driver.getWindowHandle();
-       // System.out.println(parentwindow);
-        WebElement button=driver.findElement(By.xpath(" //a[text()='Click Here']"));
+        String parentwindow = driver.getWindowHandle();
+        // System.out.println(parentwindow);
+        WebElement button = driver.findElement(By.xpath(" //a[text()='Click Here']"));
         button.click();
-        Set<String> handleids=driver.getWindowHandles();
+        Set<String> handleids = driver.getWindowHandles();
         System.out.println(handleids);
-        Iterator<String> itr=handleids.iterator();
-        while(itr.hasNext()){
-            String child=itr.next();
-            if(!parentwindow.equals(child)){
+        Iterator<String> itr = handleids.iterator();
+        while (itr.hasNext()) {
+            String child = itr.next();
+            if (!parentwindow.equals(child)) {
                 driver.switchTo().window(child);
-                WebElement textfiled=driver.findElement(By.xpath("//input[@name='emailid']"));
+                WebElement textfiled = driver.findElement(By.xpath("//input[@name='emailid']"));
                 textfiled.sendKeys("test@gmail.com");
                 driver.findElement(By.xpath("//input[@name='btnLogin']")).click();
             }
         }
         driver.switchTo().window(parentwindow);
     }
+
     @Test
-    public void VerifyFileUpload(){
+    public void VerifyFileUpload() {
         driver.get("https://demo.guru99.com/test/upload/");
-        WebElement filelocate=driver.findElement(By.id("uploadfile_0"));
+        WebElement filelocate = driver.findElement(By.id("uploadfile_0"));
         filelocate.sendKeys("C:\\Users\\Rosmi Joseph\\Documents\\JavaNotes\\MavenNotes.docx");
         driver.findElement(By.id("terms")).click();
         driver.findElement(By.id("submitbutton")).click();
 
     }
+
     @Test
-    public void verifyUrl(){
+    public void verifyUrl() {
         System.out.println("rosmi");
     }
+
     @Test
     public void verifyFileuploadRobot() throws AWTException, InterruptedException {
         driver.get("http://demo.guru99.com/test/upload/");
         StringSelection s = new StringSelection("C:\\\\Users\\\\Rosmi Joseph\\\\Documents\\\\JavaNotes\\\\MavenNotes.docx");
         // Clipboard copy
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(s,null);
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(s, null);
         //identify element and click
-        WebElement filelocate=driver.findElement(By.id("uploadfile_0"));
+        WebElement filelocate = driver.findElement(By.id("uploadfile_0"));
         filelocate.submit();
         Thread.sleep(10000);
 
@@ -138,31 +153,65 @@ public class SeleniumCommands {
         r.keyRelease(KeyEvent.VK_ENTER);
         Thread.sleep(10000);
     }
+
     @Test
-    public void verifyJavascriptClickAndSendkeys(){
+    public void verifyJavascriptClickAndSendkeys() {
         driver.get("http://demowebshop.tricentis.com/");
-        JavascriptExecutor js=(JavascriptExecutor)driver;
-        String s1="document.getElementById('newsletter-email').value='test@gmail.com'";
-        String s2="document.getElementById('newsletter-subscribe-button').click()";
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        String s1 = "document.getElementById('newsletter-email').value='test@gmail.com'";
+        String s2 = "document.getElementById('newsletter-subscribe-button').click()";
         js.executeScript(s1);
         js.executeScript(s2);
     }
 
     @Test
     public void verifyValidloginExcel() throws IOException {
-        ExcelUtility excelUtility=new ExcelUtility();
+        ExcelUtility excelUtility = new ExcelUtility();
         driver.get("http://demowebshop.tricentis.com/");
         driver.findElement(By.xpath("//a[text()='Log in']")).click();
-        WebElement user=driver.findElement(By.xpath("//input[@id='Email']"));
-        String user_value=excelUtility.readData(1,0);
+        WebElement user = driver.findElement(By.xpath("//input[@id='Email']"));
+        String user_value = excelUtility.readData(1,0, "Login");
         user.sendKeys(user_value);
-
-        WebElement pass=driver.findElement(By.xpath("//input[@id='Password']"));
-        String pass_value=excelUtility.readData(1,1);
+        WebElement pass = driver.findElement(By.xpath("//input[@id='Password']"));
+        String pass_value = excelUtility.readData(1, 1, "Login");
         pass.sendKeys(pass_value);
         driver.findElement(By.xpath("//input[@class='button-1 login-button']")).click();
     }
+
+    @Test(dataProvider ="userlogindata")
+    public void verifyLoginUsingDataprovider(String username,String password) {
+        driver.get("http://demowebshop.tricentis.com/");
+        driver.findElement(By.xpath("//a[text()='Log in']")).click();
+        WebElement user = driver.findElement(By.xpath("//input[@id='Email']"));
+        user.sendKeys(username);
+        WebElement pass = driver.findElement(By.xpath("//input[@id='Password']"));
+        pass.sendKeys(password);
+        driver.findElement(By.xpath("//input[@class='button-1 login-button']")).click();
+    }
+
+    /*@DataProvider(name="userlogindata")
+    public Object[][] loginData(){
+        Object[][] data=new Object[2][2];
+        data[0][0]="selenium121@test.com";
+        data[0][1]="12345678";
+        data[1][0]="selenium111@test.com";
+        data[1][1]="12345678";
+        return data;
+        */
+    @DataProvider(name="userlogindata")
+    public Object[][] loginData(){
+        Object[][] data=new Object[2][2];
+        data[0][0]="selenium121@test.com";
+        data[0][1]="12345678";
+        data[1][0]="selenium111@test.com";
+        data[1][1]="12345678";
+        return data;
+    }
+
 }
+
+
+
 
 
 
