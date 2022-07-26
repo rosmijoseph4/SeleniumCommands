@@ -1,21 +1,19 @@
 package com.obs.seleniumbasics;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.ITestResult;
+import org.testng.annotations.*;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Iterator;
@@ -43,23 +41,36 @@ public class SeleniumCommands {
         }
         driver.manage().window().maximize();
         driver.manage().deleteAllCookies();
-        //driver.get(url);
-       // driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
+       // driver.get(url);
+       //driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
     }
 
-    @BeforeTest
-    public void setUp() {
-        testInitialize("chrome","http://demowebshop.tricentis.com/");
+    @BeforeMethod(alwaysRun = true)
+    @Parameters({"browser","url"})
+    public void setUp(String browserName,String baseUrl) {
+       // public void setUp(){
+        testInitialize(browserName,baseUrl);
+        //testInitialize("chrome","http://demowebshop.tricentis.com/");
     }
+
+
     @AfterMethod
-    public void tearDown() {
-        //driver.close();
-        //driver.quit();
-    }
 
-    @Test
+       public void tearDown(ITestResult result) throws IOException {
+
+            if(result.getStatus()==ITestResult.FAILURE) {
+                TakesScreenshot scrshot = (TakesScreenshot) driver;
+                File screenshot = scrshot.getScreenshotAs(OutputType.FILE);
+                FileUtils.copyFile(screenshot,new File("./Screenshots/"+result.getName()+".png"));
+            }
+            //driver.close();
+           driver.quit();
+        }
+
+
+        @Test(priority = 1,enabled = true,description = "TC_001_Verify Homepage Titile",groups = {"smoke"})
     public void verifyHomePageTitle() {
-        driver.get("http://demowebshop.tricentis.com/");
+       driver.get("http://demowebshop.tricentis.com/");
         String expTitle ="Demo Web Shop";
         String actualTitle=driver.getTitle();
         Assert.assertEquals(actualTitle, expTitle,"ERROR :Invalid Homepage Title Found");
@@ -148,21 +159,49 @@ public class SeleniumCommands {
         js.executeScript(s2);
     }
 
-    @Test
+    @Test(priority = 2,enabled = true,groups = {"smoke"},description = "TC_002 verify Validlogin Excel")
     public void verifyValidloginExcel() throws IOException {
         ExcelUtility excelUtility=new ExcelUtility();
         driver.get("http://demowebshop.tricentis.com/");
         driver.findElement(By.xpath("//a[text()='Log in']")).click();
         WebElement user=driver.findElement(By.xpath("//input[@id='Email']"));
-        String user_value=excelUtility.readData(1,0);
+        String user_value=excelUtility.readData(1,0,"Login");
         user.sendKeys(user_value);
 
         WebElement pass=driver.findElement(By.xpath("//input[@id='Password']"));
-        String pass_value=excelUtility.readData(1,1);
+        String pass_value=excelUtility.readData(1,1,"Login");
         pass.sendKeys(pass_value);
         driver.findElement(By.xpath("//input[@class='button-1 login-button']")).click();
     }
+    @Test(dataProvider = "userlogindata")
+    public void verifyLoginUsingDataProvider(String username, String password){
+        driver.get("http://demowebshop.tricentis.com/");
+        driver.findElement(By.xpath("//a[text()='Log in']")).click();
+        WebElement user = driver.findElement(By.xpath("//input[@id='Email']"));
+        user.sendKeys(username);
+        WebElement pass = driver.findElement(By.xpath("//input[@id='Password']"));
+        pass.sendKeys(password);
+        driver.findElement(By.xpath("//input[@class='button-1 login-button']")).click();
+    }
+    @DataProvider(name="userlogindata")
+    public Object[][] loginData(){
+        Object[][] data=new Object[2][2];
+        data[0][0]="selenium121@test.com";
+        data[0][1]="12345678";
+        data[1][0]="selenium111@test.com";
+        data[1][1]="12345678";
+        return data;
+    }
+    @DataProvider(name="loginExcelDataprovider")
+    public Object[][] loginExcelData() throws IOException {
+        ExcelUtility excelUtility=new ExcelUtility();
+        String filepath = System.getProperty("user.dir") + "\\src\\main\\resources\\TestData.xlsx";
+        Object[][] excelData=excelUtility.readDataFromExcel(filepath,"login");
+        return excelData;
+    }
+
 }
+
 
 
 
